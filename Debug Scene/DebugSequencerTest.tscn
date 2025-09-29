@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://cs4s3cffpou26"]
+
+[ext_resource type="PackedScene" uid="uid://ddkc1nhvtgw5i" path="res://addons/sequencer/editor/SequencerDock.tscn" id="1_yslxb"]
+
+[node name="DebugSequencerTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="SequencerDock" parent="." instance=ExtResource("1_yslxb")]
+layout_mode = 1

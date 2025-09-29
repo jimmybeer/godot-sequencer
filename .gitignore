@@ -1,0 +1,42 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+# Godot 4 project files to ignore
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Godot editor cache and import metadata
+.import/
+.export/
+.cache/
+mono/
+.mono/
+
+# Build artifacts
+*.log
+*.tmp
+*.swp
+
+# User data (autosaves, settings, etc.)
+user://*
+*.json
+!addons/sequencer/**  # but keep your plugin’s files, even if JSON
+
+# Exported builds
+*.exe
+*.apk
+*.zip
+*.pck
+
+# VSCode / JetBrains IDE stuff
+.vscode/
+.idea/
+
+# Python virtualenvs if you use them
+venv/
+.venv/
+
+# Misc
+*.bak
