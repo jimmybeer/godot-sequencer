@@ -12,22 +12,65 @@ extends Control
 
 @onready var undo_btn:Button = %UndoBtn
 @onready var redo_btn:Button = %RedoBtn
+@onready var save_check := %SaveCheck
 @onready var save_btn:Button = %SaveBtn
 @onready var load_btn:Button = %LoadBtn
 
 @onready var timeline:Control = %TimeLineView
+@onready var tracks_vbox: VBoxContainer = %TracksVBox
+@onready var labels_vbox: VBoxContainer = %TrackLabelsVBox
 
 @onready var command_bus := CommandBus.new()
-@onready var autosave := AutosaveService.new()
+@onready var autosave := AutosaveService.new(null)
 
 var clock:Node
+
+func load_mock_tracks():
+	# Example: make 2 tracks with dummy clips
+	var clip_res = preload("res://addons/sequencer/core/clip.gd")
+	var track_res = preload("res://addons/sequencer/core/seq_track.gd")
+
+	for i in 2:
+		var track = track_res.new()
+		track.name = "Track %d" % i
+
+		var c1 = clip_res.new()
+		c1.name = "Clip A"
+		c1.start = 1.0+i
+		c1.duration = 3.0
+
+		var c2 = clip_res.new()
+		c2.name = "Clip B"
+		c2.start = 5.0+(i*3)
+		c2.duration = 2.0
+
+		track.clips.append(c1)
+		track.clips.append(c2)
+
+		# ✅ Use helper
+		add_track(track.name, track.clips)
+		
+func add_track(track_name: String, clips: Array):
+	# --- Label Row ---
+	var label_row = Label.new()
+	label_row.text = track_name
+	label_row.custom_minimum_size = Vector2(100, 20)
+	labels_vbox.add_child(label_row)
+
+	# --- Track Row ---
+	var tv = preload("res://addons/sequencer/editor/TrackView.tscn").instantiate()
+	tracks_vbox.add_child(tv)
+	tv.custom_minimum_size = Vector2(0, 20)
+	tv.set_clips(clips)
 
 func _ready() -> void:
 	clock = load("res://addons/sequencer/core/timeline_clock.gd").new()
 	add_child(clock)
-	add_child(autosave)
-	autosave.clock = clock
+	#add_child(autosave)
+	#autosave.clock = clock
 	clock.connect("time_changed", Callable(self, "_on_time_changed"))
+	
+	load_mock_tracks()
 	
 	add_child(command_bus)
 	command_bus.stack_changed.connect(update_undo_redo_buttons)
@@ -44,20 +87,20 @@ func _ready() -> void:
 	
 	loop_check.toggled.connect(func(v): clock.loop = v)
 	
-	fps_spin.value_changed.connect(func(v): 
+	fps_spin.value_changed.connect(func(v):
 		var cmd = SetFPSCommand.new(clock, clock.fps, int(v), fps_spin)
 		command_bus.push(cmd)
 	)
 	
 	in_field.text = str(clock.in_point)
-	in_field.text_submitted.connect(func(txt): 
+	in_field.text_submitted.connect(func(txt):
 		var cmd = SetPlatRangeCommand.new(clock,
 			clock.in_point, clock.out_point, float(txt), clock.out_point, in_field, out_field)
 		command_bus.push(cmd)
 	)
 	
 	out_field.text = str(clock.out_point)
-	out_field.text_submitted.connect(func(txt): 
+	out_field.text_submitted.connect(func(txt):
 		var cmd = SetPlatRangeCommand.new(clock,
 			clock.in_point, clock.out_point, clock.in_point, float(txt), in_field, out_field)
 		command_bus.push(cmd)
@@ -65,6 +108,10 @@ func _ready() -> void:
 	
 	undo_btn.pressed.connect(func(): command_bus.undo())
 	redo_btn.pressed.connect(func(): command_bus.redo())
+	
+	save_check.button_pressed = true
+	save_check.toggled.connect(func(v): autosave.enabled = v)
+	
 	save_btn.pressed.connect(func():
 		autosave.save()
 		)
