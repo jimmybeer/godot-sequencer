@@ -148,6 +148,7 @@ value = 1.0
 [node name="TracksScroll" type="ScrollContainer" parent="RootVBox/MainArea/TimelineVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="TracksVBox" type="VBoxContainer" parent="RootVBox/MainArea/TimelineVBox/TracksScroll"]
 unique_name_in_owner = true

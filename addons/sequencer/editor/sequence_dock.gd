@@ -24,6 +24,7 @@ extends Control
 @onready var autosave := AutosaveService.new(null)
 
 var clock:Node
+var viewport:TimelineViewport
 
 func load_mock_tracks():
 	# Example: make 2 tracks with dummy clips
@@ -62,6 +63,9 @@ func add_track(track_name: String, clips: Array):
 	tracks_vbox.add_child(tv)
 	tv.custom_minimum_size = Vector2(0, 20)
 	tv.set_clips(clips)
+	
+	if tv.has_method("update_view"):
+		tv.update_view(viewport.px_per_second, viewport.scroll_x)
 
 func _ready() -> void:
 	clock = load("res://addons/sequencer/core/timeline_clock.gd").new()
@@ -70,7 +74,18 @@ func _ready() -> void:
 	#autosave.clock = clock
 	clock.connect("time_changed", Callable(self, "_on_time_changed"))
 	
+	viewport = preload("res://addons/sequencer/core/timeline_viewport.gd").new()
+	add_child(viewport)
+	
+	if timeline.has_method("set_viewport"):
+		timeline.set_viewport(viewport)
+	
+	# keep tracks synced when viewport changes
+	viewport.viewport_changed.connect(_on_viewport_changed)
+	
 	load_mock_tracks()
+	
+	_on_viewport_changed(viewport.px_per_second, viewport.scroll_x)
 	
 	add_child(command_bus)
 	command_bus.stack_changed.connect(update_undo_redo_buttons)
@@ -142,6 +157,13 @@ func _process(delta:float) -> void:
 
 func _on_time_changed(t:float) -> void:
 	time_label.text = str(snapped(t, 0.01)) + "s"
+
+func _on_viewport_changed(pxps:float, scroll:float) -> void:
+	for child in tracks_vbox.get_children():
+		if child.has_method("update_view"):
+			child.update_view(pxps, scroll)
+	if timeline:
+		timeline.queue_redraw()
 
 func update_undo_redo_buttons() -> void:
 	undo_btn.disabled = command_bus.undo_stack.is_empty()

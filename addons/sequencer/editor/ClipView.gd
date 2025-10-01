@@ -9,11 +9,15 @@ func init_from_clip(clip: Resource, _px: float, _scroll: float):
 	clip_data = clip
 	px_per_second = _px
 	scroll_x = _scroll
+	update_geometry(px_per_second, scroll_x)
 
 func _ready() -> void:
 	update_geometry(px_per_second, scroll_x)
 
 func update_geometry(_px: float, _scroll: float):
+	if clip_data == null:
+		return
+		
 	px_per_second = _px
 	scroll_x = _scroll
 
