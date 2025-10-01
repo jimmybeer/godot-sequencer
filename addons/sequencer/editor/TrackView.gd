@@ -1,6 +1,8 @@
 @tool
 extends Control
 
+signal clip_clicked(clip_view: Node, shift: bool)
+
 @export var track_name: String = "Track"
 
 var clips: Array = []   # will hold ClipView instances
@@ -17,8 +19,12 @@ func set_clips(new_clips: Array):
 		var cv = preload("res://addons/sequencer/editor/ClipView.tscn").instantiate()
 		clips_layer.add_child(cv)
 		cv.init_from_clip(clip, 100.0, 0.0)
+		cv.clip_clicked.connect(_on_clip_clicked)
 		clips.append(cv)
 
 func update_view(pxps: float, scroll: float):
 	for cv in clips:
 		cv.update_geometry(pxps, scroll)
+
+func _on_clip_clicked(clip_view, shift:bool) -> void:
+	emit_signal("clip_clicked", clip_view, shift)

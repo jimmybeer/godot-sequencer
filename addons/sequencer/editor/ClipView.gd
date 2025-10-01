@@ -1,7 +1,17 @@
 @tool
 extends Control
+class_name ClipView
+
+signal clip_clicked(clip_view: Node, shift: bool)
 
 var clip_data
+var selected:bool = false:
+	set(v):
+		selected = v
+		queue_redraw()
+	get:
+		return selected
+		
 var px_per_second := 100.0
 var scroll_x := 0.0
 
@@ -32,9 +42,11 @@ func update_geometry(_px: float, _scroll: float):
 
 func _draw():
 	var rect = Rect2(Vector2.ZERO, size)
+	# Fill color depends on selection
+	var fill = Color(0.4, 0.7, 1.0, 0.9) if selected else Color(0.25, 0.6, 0.9, 0.9)
 
 	# Filled rectangle
-	draw_rect(rect, Color(0.25, 0.6, 0.9, 0.9))
+	draw_rect(rect, fill)
 
 	# Border
 	draw_rect(rect, Color.BLACK, false, 2)
@@ -51,3 +63,7 @@ func _draw():
 		fs,
 		Color.WHITE
 	)
+
+func _gui_input(event:InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		emit_signal("clip_clicked", self, event.shift_pressed)

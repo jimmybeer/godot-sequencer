@@ -64,6 +64,8 @@ func add_track(track_name: String, clips: Array):
 	tv.custom_minimum_size = Vector2(0, 20)
 	tv.set_clips(clips)
 	
+	tv.clip_clicked.connect(_on_clip_clicked)
+	
 	if tv.has_method("update_view"):
 		tv.update_view(viewport.px_per_second, viewport.scroll_x)
 
@@ -165,6 +167,24 @@ func _on_viewport_changed(pxps:float, scroll:float) -> void:
 	if timeline:
 		timeline.queue_redraw()
 
+func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
+	if shift:
+		# Add to selection without clearing
+		var cmd := SelectClipCommand.new(cv)
+		command_bus.push(cmd)
+	else:
+		# Clear others first, then select this one
+		var all_clips = []
+		for track in tracks_vbox.get_children():
+			all_clips += track.clips
+			
+		var clear_cmd = ClearSelectionCommand.new(all_clips, cv)
+		if clear_cmd.previous.size() > 0:
+			command_bus.push(clear_cmd)
+		
+		var select_cmd = SelectClipCommand.new(cv)
+		command_bus.push(select_cmd)
+		
 func update_undo_redo_buttons() -> void:
 	undo_btn.disabled = command_bus.undo_stack.is_empty()
 	redo_btn.disabled = command_bus.redo_stack.is_empty()
