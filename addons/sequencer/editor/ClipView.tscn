@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://b8rmq11day1wo"]
 
-[ext_resource type="Script" uid="uid://rxyqy3artx0w" path="res://addons/sequencer/editor/ClipView.gd" id="1_tiin7"]
+[ext_resource type="Script" uid="uid://rxyqy3artx0w" path="res://addons/sequencer/editor/clip_view.gd" id="1_tiin7"]
 
 [node name="ClipView" type="Control"]
 custom_minimum_size = Vector2(0, 25)

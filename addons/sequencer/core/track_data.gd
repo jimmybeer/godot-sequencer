@@ -1,8 +1,8 @@
 extends Resource
-class_name SeqTrack
+class_name TrackData
 
 @export var name:String = "New Track"
-@export var clips:Array[Clip] = []
+@export var clips:Array[ClipData] = []
 
 func to_dict() -> Dictionary:
 	var clips_arr:Array = []
@@ -15,13 +15,13 @@ func to_dict() -> Dictionary:
 		"clips": clips_arr
 	}
 
-func from_dict(data:Dictionary) -> SeqTrack:
+func from_dict(data:Dictionary) -> TrackData:
 	name = data.get("name", name)
 	clips.clear()
 	
 	if data.has("clips"):
 		for cdict in data["clips"]:
-			var clip = Clip.new().from_dict(cdict)
+			var clip = ClipData.new().from_dict(cdict)
 			clips.append(clip)
 	
 	return self

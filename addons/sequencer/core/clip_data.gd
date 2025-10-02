@@ -1,5 +1,5 @@
 extends Resource
-class_name Clip
+class_name ClipData
 
 @export var name:String = "New Clip"
 @export var start:float = 0.0 # in seconds
@@ -12,8 +12,15 @@ func to_dict() -> Dictionary:
 		"duration": duration,
 	}
 
-func from_dict(data:Dictionary) -> Clip:
+func from_dict(data:Dictionary) -> ClipData:
 	name = data.get("name", name)
 	start = data.get("start", start)
 	duration = data.get("duration", duration)
+	validate()
 	return self
+
+func validate() -> void:
+	if duration < 0.0:
+		duration = 0.0
+	if start < 0.0:
+		start = 0.0

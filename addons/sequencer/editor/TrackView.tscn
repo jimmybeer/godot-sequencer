@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://6bv7uowbhyad"]
 
-[ext_resource type="Script" uid="uid://da6qb15k2fcr5" path="res://addons/sequencer/editor/TrackView.gd" id="1_hweb1"]
+[ext_resource type="Script" uid="uid://da6qb15k2fcr5" path="res://addons/sequencer/editor/track_view.gd" id="1_hweb1"]
 
 [node name="TrackView" type="HBoxContainer"]
 custom_minimum_size = Vector2(0, 25)

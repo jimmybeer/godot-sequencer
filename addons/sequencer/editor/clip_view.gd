@@ -4,32 +4,22 @@ class_name ClipView
 
 signal clip_clicked(clip_view: Node, shift: bool)
 
-var clip_data
+var clip_data:ClipData
+
 var selected:bool = false:
 	set(v):
 		selected = v
 		queue_redraw()
 	get:
 		return selected
-		
-var px_per_second := 100.0
-var scroll_x := 0.0
 
-func init_from_clip(clip: Resource, _px: float, _scroll: float):
+func bind_to_model(clip: ClipData, _px: float, _scroll: float):
 	clip_data = clip
-	px_per_second = _px
-	scroll_x = _scroll
-	update_geometry(px_per_second, scroll_x)
+	update_geometry(_px, _scroll)
 
-func _ready() -> void:
-	update_geometry(px_per_second, scroll_x)
-
-func update_geometry(_px: float, _scroll: float):
+func update_geometry(px_per_second: float, scroll_x: float):
 	if clip_data == null:
 		return
-		
-	px_per_second = _px
-	scroll_x = _scroll
 
 	var x = clip_data.start * px_per_second - scroll_x
 	var w = clip_data.duration * px_per_second

@@ -4,7 +4,7 @@ class_name Sequence
 @export var name:String = "New Sequence"
 @export var fps:int = 30
 @export var duration:float = 10.0
-@export var tracks:Array[SeqTrack] = []
+@export var tracks:Array[TrackData] = []
 
 func to_dict() -> Dictionary:
 	var tracks_arr:Array = []
@@ -26,7 +26,7 @@ func from_dict(data:Dictionary) -> Sequence:
 	
 	if data.has("tracks"):
 		for tdict in data["tracks"]:
-			var track = SeqTrack.new().from_dict(tdict)
+			var track = TrackData.new().from_dict(tdict)
 			tracks.append(track)
 	
 	return self

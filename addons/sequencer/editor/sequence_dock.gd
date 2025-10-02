@@ -1,6 +1,9 @@
 @tool
 extends Control
-
+class_name SequenceDock
+# ------------------------------
+# UI references
+# ------------------------------
 @onready var play_btn:Button = %PlayBtn
 @onready var pause_btn:Button = %PauseBtn
 @onready var stop_btn:Button = %StopBtn
@@ -20,56 +23,26 @@ extends Control
 @onready var tracks_vbox: VBoxContainer = %TracksVBox
 @onready var labels_vbox: VBoxContainer = %TrackLabelsVBox
 
+@onready var add_clip_btn:Button = %AddClipBtn
+@onready var del_clip_btn:Button = %DelClipBtn
+
+
+# ------------------------------
+# Core objects
+# ------------------------------
 @onready var command_bus := CommandBus.new()
 @onready var autosave := AutosaveService.new(null)
-
 var clock:Node
 var viewport:TimelineViewport
 
-func load_mock_tracks():
-	# Example: make 2 tracks with dummy clips
-	var clip_res = preload("res://addons/sequencer/core/clip.gd")
-	var track_res = preload("res://addons/sequencer/core/seq_track.gd")
-
-	for i in 2:
-		var track = track_res.new()
-		track.name = "Track %d" % i
-
-		var c1 = clip_res.new()
-		c1.name = "Clip A"
-		c1.start = 1.0+i
-		c1.duration = 3.0
-
-		var c2 = clip_res.new()
-		c2.name = "Clip B"
-		c2.start = 5.0+(i*3)
-		c2.duration = 2.0
-
-		track.clips.append(c1)
-		track.clips.append(c2)
-
-		# ✅ Use helper
-		add_track(track.name, track.clips)
-		
-func add_track(track_name: String, clips: Array):
-	# --- Label Row ---
-	var label_row = Label.new()
-	label_row.text = track_name
-	label_row.custom_minimum_size = Vector2(100, 20)
-	labels_vbox.add_child(label_row)
-
-	# --- Track Row ---
-	var tv = preload("res://addons/sequencer/editor/TrackView.tscn").instantiate()
-	tracks_vbox.add_child(tv)
-	tv.custom_minimum_size = Vector2(0, 20)
-	tv.set_clips(clips)
-	
-	tv.clip_clicked.connect(_on_clip_clicked)
-	
-	if tv.has_method("update_view"):
-		tv.update_view(viewport.px_per_second, viewport.scroll_x)
+var sequence:Sequence
+# Maps between model and views
+var track_view_by_model:Dictionary = {}
+var label_by_model:Dictionary = {}
 
 func _ready() -> void:
+	sequence = load("res://addons/sequencer/core/Sequence.gd").new()
+	
 	clock = load("res://addons/sequencer/core/timeline_clock.gd").new()
 	add_child(clock)
 	#add_child(autosave)
@@ -81,8 +54,6 @@ func _ready() -> void:
 	
 	if timeline.has_method("set_viewport"):
 		timeline.set_viewport(viewport)
-	
-	# keep tracks synced when viewport changes
 	viewport.viewport_changed.connect(_on_viewport_changed)
 	
 	load_mock_tracks()
@@ -90,7 +61,10 @@ func _ready() -> void:
 	_on_viewport_changed(viewport.px_per_second, viewport.scroll_x)
 	
 	add_child(command_bus)
-	command_bus.stack_changed.connect(update_undo_redo_buttons)
+	command_bus.stack_changed.connect(func() :
+		refresh_all_views_from_model()
+		update_undo_redo_buttons()
+		)
 	update_undo_redo_buttons()
 	
 	#UI wiring
@@ -122,6 +96,9 @@ func _ready() -> void:
 			clock.in_point, clock.out_point, clock.in_point, float(txt), in_field, out_field)
 		command_bus.push(cmd)
 	)
+	
+	add_clip_btn.pressed.connect(_on_add_clip_pressed)
+	del_clip_btn.pressed.connect(_on_del_clip_pressed)
 	
 	undo_btn.pressed.connect(func(): command_bus.undo())
 	redo_btn.pressed.connect(func(): command_bus.redo())
@@ -161,12 +138,97 @@ func _on_time_changed(t:float) -> void:
 	time_label.text = str(snapped(t, 0.01)) + "s"
 
 func _on_viewport_changed(pxps:float, scroll:float) -> void:
-	for child in tracks_vbox.get_children():
-		if child.has_method("update_view"):
-			child.update_view(pxps, scroll)
+	for tv in track_view_by_model.values():
+		tv.update_view(pxps, scroll)
 	if timeline:
 		timeline.queue_redraw()
 
+func load_mock_tracks():
+	# Example: make 2 tracks with dummy clips
+	var clip_res = preload("res://addons/sequencer/core/clip_data.gd")
+	var track_res = preload("res://addons/sequencer/core/track_data.gd")
+
+	for i in 2:
+		var track = track_res.new()
+		track.name = "Track %d" % i
+
+		var c1 = clip_res.new()
+		c1.name = "Clip A"
+		c1.start = 1.0+i
+		c1.duration = 3.0
+
+		var c2 = clip_res.new()
+		c2.name = "Clip B"
+		c2.start = 5.0+(i*3)
+		c2.duration = 2.0
+
+		track.clips.append(c1)
+		track.clips.append(c2)
+
+		sequence.tracks.append(track)
+		_create_track_row_for(track)
+		
+func _create_track_row_for(track:TrackData) -> void:
+	# Left header
+	var label_row := Label.new()
+	label_row.text = track.name
+	label_row.custom_minimum_size = Vector2(100, 25)
+	labels_vbox.add_child(label_row)
+	label_by_model[track] = label_row
+	
+	# Right lane
+	var tv:TrackView = preload("res://addons/sequencer/editor/TrackView.tscn").instantiate()
+	tv.custom_minimum_size = Vector2(0, 25)
+	tracks_vbox.add_child(tv)
+	tv.bind_to_model(track)    
+	tv.clip_clicked.connect(_on_clip_clicked) 
+	track_view_by_model[track] = tv
+	tv.update_view(viewport.px_per_second, viewport.scroll_x)
+	
+func refresh_all_views_from_model() -> void:
+	# Reuse existing rows when possible; create missing; remove extra
+	var wanted: = sequence.tracks
+
+	# Remove views for tracks no longer present
+	for t in track_view_by_model.keys():
+		if not wanted.has(t):
+			track_view_by_model[t].queue_free()
+			label_by_model[t].queue_free()
+			track_view_by_model.erase(t)
+			label_by_model.erase(t)
+
+	# Ensure a row for each track and refresh it
+	for t in wanted:
+		if not track_view_by_model.has(t):
+			_create_track_row_for(t)
+		track_view_by_model[t].refresh_from_model()
+
+func _on_add_clip_pressed() -> void:
+	if sequence.tracks.is_empty():
+		return
+
+	var track:TrackData = sequence.tracks[0] # later current/selected track
+	var CreateCmd = preload("res://addons/sequencer/core/commands/create_clip_command.gd")
+	var cmd = CreateCmd.new(track, 2.0, 1.5, "New Clip")
+	command_bus.push(cmd)
+	
+func _on_del_clip_pressed() -> void:
+	var cmds: Array[ICommand] = []
+	
+	for t in sequence.tracks:
+		var tv:TrackView = track_view_by_model.get(t, null)
+		if tv == null: continue
+		for cv in tv.get_selected_clips():
+			var DeleteCmd = preload("res://addons/sequencer/core/commands/delete_clip_command.gd")
+			cmds.append(DeleteCmd.new(t, cv.clip_data))
+	if cmds.is_empty(): return
+	var BatchCmd = preload("res://addons/sequencer/core/commands/batch_command.gd")
+	command_bus.push(BatchCmd.new(cmds, "Delete %d clip(s)" % cmds.size()))
+
+func update_undo_redo_buttons() -> void:
+	undo_btn.disabled = command_bus.undo_stack.is_empty()
+	redo_btn.disabled = command_bus.redo_stack.is_empty()
+	
 func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
 	if shift:
 		# Add to selection without clearing
@@ -175,16 +237,11 @@ func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
 	else:
 		# Clear others first, then select this one
 		var all_clips = []
-		for track in tracks_vbox.get_children():
-			all_clips += track.clips
-			
+		for tv in track_view_by_model.values():
+			all_clips += tv.get_all_clips()
 		var clear_cmd = ClearSelectionCommand.new(all_clips, cv)
 		if clear_cmd.previous.size() > 0:
 			command_bus.push(clear_cmd)
-		
 		var select_cmd = SelectClipCommand.new(cv)
 		command_bus.push(select_cmd)
-		
-func update_undo_redo_buttons() -> void:
-	undo_btn.disabled = command_bus.undo_stack.is_empty()
-	redo_btn.disabled = command_bus.redo_stack.is_empty()
+	
