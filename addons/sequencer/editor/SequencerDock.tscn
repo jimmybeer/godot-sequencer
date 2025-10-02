@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://ddkc1nhvtgw5i"]
+[gd_scene load_steps=5 format=3 uid="uid://ddkc1nhvtgw5i"]
 
 [ext_resource type="Script" uid="uid://cvi47v3nrt6f7" path="res://addons/sequencer/editor/sequence_dock.gd" id="1_5effb"]
 [ext_resource type="Script" uid="uid://cwfdvqrhcdcsa" path="res://addons/sequencer/editor/timeline_view.gd" id="2_5cgni"]
+[ext_resource type="PackedScene" uid="uid://ble15ywuhuxi4" path="res://addons/sequencer/editor/ClipPropertiesBar.tscn" id="3_40qjy"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_40qjy"]
+bg_color = Color(0.929412, 0.352941, 0.678431, 0)
 
 [node name="SequencerDock" type="Control"]
 layout_mode = 3
@@ -64,11 +68,13 @@ value = 30.0
 [node name="InField" type="LineEdit" parent="RootVBox/TransportBar"]
 unique_name_in_owner = true
 layout_mode = 2
+text = "0.0"
 placeholder_text = "in (s)"
 
 [node name="OutField" type="LineEdit" parent="RootVBox/TransportBar"]
 unique_name_in_owner = true
 layout_mode = 2
+text = "10.0"
 placeholder_text = "out (s)"
 
 [node name="AddClipBtn" type="Button" parent="RootVBox/TransportBar"]
@@ -90,16 +96,19 @@ size_flags_horizontal = 3
 [node name="UndoBtn" type="Button" parent="RootVBox/TransportBar"]
 unique_name_in_owner = true
 layout_mode = 2
+disabled = true
 text = "Undo"
 
 [node name="RedoBtn" type="Button" parent="RootVBox/TransportBar"]
 unique_name_in_owner = true
 layout_mode = 2
+disabled = true
 text = "Redo"
 
 [node name="SaveCheck" type="CheckBox" parent="RootVBox/TransportBar"]
 unique_name_in_owner = true
 layout_mode = 2
+button_pressed = true
 text = "Auto-save"
 
 [node name="SaveBtn" type="Button" parent="RootVBox/TransportBar"]
@@ -162,7 +171,22 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="TracksVBox" type="VBoxContainer" parent="RootVBox/MainArea/TimelineVBox/TracksScroll"]
+[node name="TracksArea" type="Panel" parent="RootVBox/MainArea/TimelineVBox/TracksScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_40qjy")
+
+[node name="TracksVBox" type="VBoxContainer" parent="RootVBox/MainArea/TimelineVBox/TracksScroll/TracksArea"]
 unique_name_in_owner = true
 layout_mode = 2
+offset_bottom = 576.0
 size_flags_vertical = 3
+mouse_filter = 0
+
+[node name="ClipPropertiesBar" parent="RootVBox" instance=ExtResource("3_40qjy")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[connection signal="gui_input" from="RootVBox/MainArea/TimelineVBox/TracksScroll/TracksArea" to="." method="_on_tracks_vbox_gui_input"]

@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3 uid="uid://ble15ywuhuxi4"]
+
+[ext_resource type="Script" uid="uid://db6xansuc51qr" path="res://addons/sequencer/editor/ClipPropertiesBar.gd" id="1_gi3ku"]
+
+[node name="ClipPropertiesBar" type="HBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gi3ku")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Clip:"
+
+[node name="NameLbl" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clip Name"
+
+[node name="Label2" type="Label" parent="."]
+layout_mode = 2
+text = "Start:"
+
+[node name="StartField" type="LineEdit" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0.00s"
+
+[node name="Label3" type="Label" parent="."]
+layout_mode = 2
+text = "Duration:"
+
+[node name="DurationField" type="LineEdit" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0.00s"

@@ -2,7 +2,9 @@
 extends Control
 class_name ClipView
 
-signal clip_clicked(clip_view: Node, shift: bool)
+signal clip_clicked(cv: ClipView, shift: bool)
+signal clip_drag_preview(cv: ClipView, new_start: float)
+signal clip_drag_finished(cv: ClipView, old_start: float, new_start: float)
 
 var clip_data:ClipData
 
@@ -13,14 +15,25 @@ var selected:bool = false:
 	get:
 		return selected
 
+var dragging:bool = false
+var drag_origin_start:float = 0.0
+var drag_origin_mouse_x:float = 0.0
+var px_per_second: float = 100.0
+var scroll_x:float = 0.0
+
+const move_handle_width:float = 8.0
+
 func bind_to_model(clip: ClipData, _px: float, _scroll: float):
 	clip_data = clip
 	update_geometry(_px, _scroll)
 
-func update_geometry(px_per_second: float, scroll_x: float):
+func update_geometry(_px_per_second: float, _scroll_x: float):
 	if clip_data == null:
 		return
-
+		
+	px_per_second = _px_per_second
+	scroll_x = _scroll_x
+	
 	var x = clip_data.start * px_per_second - scroll_x
 	var w = clip_data.duration * px_per_second
 
@@ -53,7 +66,38 @@ func _draw():
 		fs,
 		Color.WHITE
 	)
+	
+	#Draw handle if selected
+	if selected:
+		var handle_w = move_handle_width
+		var handle_h = size.y
+		var handle_x = size.x/2 - handle_w/2
+		draw_rect(Rect2(Vector2(handle_x, 0), Vector2(handle_w, handle_h)), Color(1, 0.3, 0.3, 0.7))
 
 func _gui_input(event:InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		emit_signal("clip_clicked", self, event.shift_pressed)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			if not selected:
+				emit_signal("clip_clicked", self, event.shift_pressed)
+			else:
+				#check if clicking handle
+				var handle_w = move_handle_width
+				var handle_x = size.x/2 - handle_w/2
+				var handle_rect = Rect2(Vector2(handle_x, 0), Vector2(handle_w, size.y))
+				if handle_rect.has_point(event.position):
+					dragging = true
+					drag_origin_start = clip_data.start
+					drag_origin_mouse_x = event.global_position.x
+					accept_event()
+		else:
+			# Mouse released
+			if dragging:
+				dragging = false
+				var dx = event.global_position.x - drag_origin_mouse_x
+				var new_start = max(0.0, drag_origin_start + dx / px_per_second)
+				emit_signal("clip_drag_finished", self, drag_origin_start, new_start)
+				
+	elif event is InputEventMouseMotion and dragging:
+		var dx = event.global_position.x - drag_origin_mouse_x
+		var new_start = max(0.0, drag_origin_start + (dx / px_per_second))
+		emit_signal("clip_drag_preview", self, new_start)

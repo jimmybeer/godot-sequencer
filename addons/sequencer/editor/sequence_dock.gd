@@ -26,6 +26,7 @@ class_name SequenceDock
 @onready var add_clip_btn:Button = %AddClipBtn
 @onready var del_clip_btn:Button = %DelClipBtn
 
+@onready var clip_bar:ClipPropertiesBar = %ClipPropertiesBar
 
 # ------------------------------
 # Core objects
@@ -40,16 +41,18 @@ var sequence:Sequence
 var track_view_by_model:Dictionary = {}
 var label_by_model:Dictionary = {}
 
+var last_selected_cv:ClipView = null
+
 func _ready() -> void:
-	sequence = load("res://addons/sequencer/core/Sequence.gd").new()
+	sequence = load("res://addons/sequencer/core/model/Sequence.gd").new()
 	
-	clock = load("res://addons/sequencer/core/timeline_clock.gd").new()
+	clock = load("res://addons/sequencer/core/utils/timeline_clock.gd").new()
 	add_child(clock)
 	#add_child(autosave)
 	#autosave.clock = clock
 	clock.connect("time_changed", Callable(self, "_on_time_changed"))
 	
-	viewport = preload("res://addons/sequencer/core/timeline_viewport.gd").new()
+	viewport = preload("res://addons/sequencer/editor/timeline_viewport.gd").new()
 	add_child(viewport)
 	
 	if timeline.has_method("set_viewport"):
@@ -64,6 +67,7 @@ func _ready() -> void:
 	command_bus.stack_changed.connect(func() :
 		refresh_all_views_from_model()
 		update_undo_redo_buttons()
+		_update_clip_bar()
 		)
 	update_undo_redo_buttons()
 	
@@ -145,8 +149,8 @@ func _on_viewport_changed(pxps:float, scroll:float) -> void:
 
 func load_mock_tracks():
 	# Example: make 2 tracks with dummy clips
-	var clip_res = preload("res://addons/sequencer/core/clip_data.gd")
-	var track_res = preload("res://addons/sequencer/core/track_data.gd")
+	var clip_res = preload("res://addons/sequencer/core/model/clip_data.gd")
+	var track_res = preload("res://addons/sequencer/core/model/track_data.gd")
 
 	for i in 2:
 		var track = track_res.new()
@@ -181,7 +185,9 @@ func _create_track_row_for(track:TrackData) -> void:
 	tv.custom_minimum_size = Vector2(0, 25)
 	tracks_vbox.add_child(tv)
 	tv.bind_to_model(track)    
-	tv.clip_clicked.connect(_on_clip_clicked) 
+	tv.clip_clicked.connect(_on_tv_clip_clicked) 
+	tv.clip_drag_preview.connect(_on_clip_drag_preview)
+	tv.clip_drag_finished.connect(_on_clip_drag_finished)
 	track_view_by_model[track] = tv
 	tv.update_view(viewport.px_per_second, viewport.scroll_x)
 	
@@ -202,7 +208,30 @@ func refresh_all_views_from_model() -> void:
 		if not track_view_by_model.has(t):
 			_create_track_row_for(t)
 		track_view_by_model[t].refresh_from_model()
+		
+func clear_all_selection() -> void:
+	for tv in track_view_by_model.values():
+		tv.clear_selection()
+	last_selected_cv = null
+	_update_clip_bar()  # hide it
+	
+func select_clip(cv: ClipView, additive: bool) -> void:
+	if not additive:
+		clear_all_selection()
+		cv.selected = true
+	else:
+		# SHIFT toggles
+		cv.selected = !cv.selected
+		# if it was turned off and it was last_selected_view, clear reference
+		if not cv.selected and last_selected_cv == cv:
+			last_selected_cv = null
 
+	# If selected now, mark as last
+	if cv.selected:
+		last_selected_cv = cv
+
+	_update_clip_bar()
+	
 func _on_add_clip_pressed() -> void:
 	if sequence.tracks.is_empty():
 		return
@@ -228,20 +257,39 @@ func _on_del_clip_pressed() -> void:
 func update_undo_redo_buttons() -> void:
 	undo_btn.disabled = command_bus.undo_stack.is_empty()
 	redo_btn.disabled = command_bus.redo_stack.is_empty()
+
+func _on_clip_drag_preview(cv: ClipView, new_start:float) -> void:
+	if last_selected_cv == cv and is_instance_valid(last_selected_cv):
+		# Update bar live with temporary value
+		clip_bar.start_field.text = str(snapped(new_start, 0.01))
+
+func _on_clip_drag_finished(cv: ClipView, old_start: float, new_start: float) -> void:
+	if cv.clip_data == null:
+		return
+	var cmd = MoveClipCommand.new(cv.clip_data, old_start, new_start)
+	command_bus.push(cmd)
+
+func _on_tv_clip_clicked(cv: ClipView, shift: bool) -> void:
+	select_clip(cv, shift)
+
+func _on_tv_empty_clicked() -> void:
+	clear_all_selection()
+
+func _update_clip_bar() -> void:
+	if last_selected_cv == null or not is_instance_valid(last_selected_cv):
+		clip_bar.hide_bar()
+		return
+		
+	if not last_selected_cv.selected:
+		clip_bar.hide_bar()
+		last_selected_cv = null
+		return
 	
-func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
-	if shift:
-		# Add to selection without clearing
-		var cmd := SelectClipCommand.new(cv)
-		command_bus.push(cmd)
-	else:
-		# Clear others first, then select this one
-		var all_clips = []
-		for tv in track_view_by_model.values():
-			all_clips += tv.get_all_clips()
-		var clear_cmd = ClearSelectionCommand.new(all_clips, cv)
-		if clear_cmd.previous.size() > 0:
-			command_bus.push(clear_cmd)
-		var select_cmd = SelectClipCommand.new(cv)
-		command_bus.push(select_cmd)
+	clip_bar.show_for_clip(last_selected_cv.clip_data)
+
+func _on_tracks_vbox_gui_input(event: InputEvent) -> void:
 	
+	if event is InputEventMouseButton \
+	and event.button_index == MOUSE_BUTTON_LEFT \
+	and event.pressed:
+		clear_all_selection()

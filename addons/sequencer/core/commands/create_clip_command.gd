@@ -17,7 +17,7 @@ func _init(_track:TrackData, _start:float, _duration:float, _name:String = "New 
 func execute():
 	# Create the clip the first time we run
 	if clip == null:
-		clip = preload("res://addons/sequencer/core/clip_data.gd").new()
+		clip = preload("res://addons/sequencer/core/model/clip_data.gd").new()
 		clip.name = name
 		clip.start = start
 		clip.duration = duration

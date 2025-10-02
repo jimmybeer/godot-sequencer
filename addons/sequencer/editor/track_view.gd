@@ -3,6 +3,8 @@ extends Control
 class_name TrackView
 
 signal clip_clicked(clip_view: ClipView, shift: bool)
+signal clip_drag_preview(cv: ClipView, new_start: float)
+signal clip_drag_finished(cv: ClipView, old_start: float, new_start: float)
 
 @onready var clips_layer:Control = %ClipsLayer
 
@@ -33,6 +35,8 @@ func refresh_from_model() -> void:
 			clips_layer.add_child(cv)
 			cv.bind_to_model(clip, px_per_second, scroll_x)
 			cv.clip_clicked.connect(_on_clip_clicked)
+			cv.clip_drag_preview.connect(_on_clip_drag_preview)
+			cv.clip_drag_finished.connect(_on_clip_drag_finished)
 			clip_view_by_model[clip] = cv
 		else:
 			clip_view_by_model[clip].update_geometry(px_per_second, scroll_x)
@@ -46,6 +50,10 @@ func update_view(pxps: float, scroll: float):
 func get_all_clips() -> Array:
 	return clip_view_by_model.values()
 
+func clear_selection() -> void:
+	for cv in clip_view_by_model.values():
+		cv.selected = false
+		
 func get_selected_clips() -> Array[ClipView]:
 	var out:Array[ClipView] = []
 	for cv in clip_view_by_model.values():
@@ -55,3 +63,12 @@ func get_selected_clips() -> Array[ClipView]:
 
 func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
 	emit_signal("clip_clicked", cv, shift)
+
+func _on_clip_drag_preview(cv: ClipView, new_start: float):
+	# Just preview visually (don't mutate model!)
+	cv.clip_data.start = new_start
+	cv.update_geometry(px_per_second, scroll_x)
+	emit_signal("clip_drag_preview", cv, new_start)
+
+func _on_clip_drag_finished(cv: ClipView, old_start: float, new_start: float):
+	emit_signal("clip_drag_finished", cv, old_start, new_start)
