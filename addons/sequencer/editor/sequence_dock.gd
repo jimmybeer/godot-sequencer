@@ -1,6 +1,16 @@
 @tool
 extends Control
 class_name SequenceDock
+
+const MIN_DOCK_HEIGHT := 200  # or whatever feels comfortable
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED:
+		if visible:
+			call_deferred("_ensure_min_dock_height")
+			
+func _ensure_min_dock_height() -> void:
+	custom_minimum_size.y = max(custom_minimum_size.y, MIN_DOCK_HEIGHT)
+			
 # ------------------------------
 # UI references
 # ------------------------------
@@ -132,6 +142,8 @@ func _ready() -> void:
 			)
 
 func _process(delta:float) -> void:
+	if clock == null:
+		return
 	#Drive the clock and refresh the timeline
 	clock._process(delta)
 	#Cast to out TimelineView script and push time across
@@ -193,7 +205,7 @@ func _create_track_row_for(track:TrackData) -> void:
 	
 func refresh_all_views_from_model() -> void:
 	# Reuse existing rows when possible; create missing; remove extra
-	var wanted: = sequence.tracks
+	var wanted:Array[TrackData] = sequence.tracks
 
 	# Remove views for tracks no longer present
 	for t in track_view_by_model.keys():

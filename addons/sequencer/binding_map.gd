@@ -1,5 +1,5 @@
 extends Resource
-class_name Sequence
+class_name Sequencer
 
 @export var name:String = "New Sequence"
 @export var fps:int = 30
