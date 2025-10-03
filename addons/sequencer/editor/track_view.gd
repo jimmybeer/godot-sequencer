@@ -66,9 +66,15 @@ func _on_clip_clicked(cv:ClipView, shift:bool) -> void:
 
 func _on_clip_drag_preview(cv: ClipView, new_start: float):
 	# Just preview visually (don't mutate model!)
-	cv.clip_data.start = new_start
+	var range = track_data.get_non_overlap_range(cv.clip_data)
+	var clamped = clamp(new_start, range.x, range.y)
+	cv.clip_data.start = clamped
 	cv.update_geometry(px_per_second, scroll_x)
-	emit_signal("clip_drag_preview", cv, new_start)
+	emit_signal("clip_drag_preview", cv, clamped)
 
 func _on_clip_drag_finished(cv: ClipView, old_start: float, new_start: float):
-	emit_signal("clip_drag_finished", cv, old_start, new_start)
+	var range = track_data.get_non_overlap_range(cv.clip_data)
+	var clamped = clamp(new_start, range.x, range.y)
+	
+	if abs(clamped - old_start) > 0.001:
+		emit_signal("clip_drag_finished", cv, old_start, clamped)
