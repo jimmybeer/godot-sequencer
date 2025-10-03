@@ -5,6 +5,8 @@ class_name ClipData
 @export var start:float = 0.0 # in seconds
 @export var duration:float = 1.0 # in seconds
 
+var track:TrackData = null
+
 func to_dict() -> Dictionary:
 	return {
 		"name": name,

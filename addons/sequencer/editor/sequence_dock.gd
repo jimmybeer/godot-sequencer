@@ -140,6 +140,8 @@ func _ready() -> void:
 			in_field.set_block_signals(false)
 			out_field.set_block_signals(false)
 			)
+	
+	clip_bar.clip_updated.connect(_on_clip_updated)
 
 func _process(delta:float) -> void:
 	if clock == null:
@@ -172,11 +174,13 @@ func load_mock_tracks():
 		c1.name = "Clip A"
 		c1.start = 1.0+i
 		c1.duration = 3.0
+		c1.track = track
 
 		var c2 = clip_res.new()
 		c2.name = "Clip B"
 		c2.start = 5.0+(i*3)
 		c2.duration = 2.0
+		c2.track = track
 
 		track.clips.append(c1)
 		track.clips.append(c2)
@@ -305,3 +309,12 @@ func _on_tracks_vbox_gui_input(event: InputEvent) -> void:
 	and event.button_index == MOUSE_BUTTON_LEFT \
 	and event.pressed:
 		clear_all_selection()
+
+func _on_clip_updated(clip: ClipData, field: String, value: float):
+	if field == "start":
+		var MoveCmd = preload("res://addons/sequencer/core/commands/move_clip_command.gd")
+		command_bus.push(MoveCmd.new(clip, clip.start, value))
+
+	#elif field == "duration":
+	#	var ResizeCmd = preload("res://addons/sequencer/core/commands/resize_clip_command.gd")
+	#	command_bus.push(ResizeCmd.new(clip, clip.duration, value)))

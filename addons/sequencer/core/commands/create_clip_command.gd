@@ -21,6 +21,7 @@ func execute():
 		clip.name = name
 		clip.start = start
 		clip.duration = duration
+		clip.track = track
 	
 	#Append to model
 	index_when_added = track.clips.size()

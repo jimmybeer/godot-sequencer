@@ -49,3 +49,65 @@ func get_non_overlap_range(clip: ClipData) -> Vector2:
 		max_start = nxt.start - clip.duration
 
 	return Vector2(min_start, max_start)
+
+# TrackData.gd
+
+func _sorted_others(exclude: ClipData) -> Array[ClipData]:
+	var arr: Array[ClipData] = []
+	for c in clips:
+		if c != exclude:
+			arr.append(c)
+	# Sort by start time
+	arr.sort_custom(func(a, b): return a.start < b.start)
+	return arr
+
+# Returns a dict:
+# { "start": <legal_start>, "ok": true|false }
+# - ok=true  : proposed start fits without overlap
+# - ok=false : adjusted to nearest legal boundary (no overlap)
+func find_legal_start(clip: ClipData, proposed_start: float) -> Dictionary:
+	var dur := max(0.0, clip.duration)
+	var others := _sorted_others(clip)
+
+	var best_start := 0.0
+	var best_dist := INF
+	var ok := false
+
+	var cursor := 0.0  # left boundary of the current free region (time >= 0)
+	for c in others:
+		var gap_start := cursor
+		var gap_end := c.start
+		# does this gap fit the clip?
+		if gap_end - gap_start >= dur:
+			var min_s := gap_start
+			var max_s:float = gap_end - dur   # inclusive
+			# proposed fits inside this allowed-start interval?
+			if proposed_start >= min_s and proposed_start <= max_s:
+				return {"start": proposed_start, "ok": true}
+			# otherwise, record nearest boundary of this allowed-start interval
+			if proposed_start < min_s:
+				var d := min_s - proposed_start
+				if d < best_dist:
+					best_dist = d
+					best_start = min_s
+			else:
+				# proposed_start > max_s
+				var d2 := proposed_start - max_s
+				if d2 < best_dist:
+					best_dist = d2
+					best_start = max_s
+		# move cursor to the end of this clip's interval
+		cursor = max(cursor, c.start + c.duration)
+
+	# Tail gap: [cursor, +INF)
+	# Any start >= cursor is legal because there's nothing after
+	if proposed_start >= cursor:
+		return {"start": proposed_start, "ok": true}
+
+	# If proposed is left of tail gap, nearest legal in tail is cursor
+	var dist_tail := abs(cursor - proposed_start)
+	if dist_tail < best_dist:
+		best_start = cursor
+		best_dist = dist_tail
+
+	return {"start": best_start, "ok": false}

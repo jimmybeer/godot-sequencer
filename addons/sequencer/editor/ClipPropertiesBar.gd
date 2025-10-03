@@ -21,7 +21,7 @@ func hide_bar() -> void:
 	clip = null
 	visible = false
 
-func _read() -> void:
+func _ready() -> void:
 	visible = false
 	start_field.text_submitted.connect(_on_start_changed)
 	duration_field.text_submitted.connect(_on_duration_changed)
@@ -29,8 +29,21 @@ func _read() -> void:
 func _on_start_changed(txt:String) -> void:
 	if clip == null:
 		return
-	var val = float(txt)
-	emit_signal("clip_updated", clip, "start", val)
+	var proposed := float(txt)
+
+	if clip.track != null:
+		var res := clip.track.find_legal_start(clip, proposed)
+		var final_start:float = res["start"]
+
+		if abs(final_start - clip.start) > 0.0001:
+			var MoveCmd = preload("res://addons/sequencer/core/commands/move_clip_command.gd")
+			clip_updated.emit(clip, "start", final_start)  # or push command from the dock
+		# Re-sync the field to what actually applies
+		start_field.text = str(snapped(final_start, 0.01))
+	else:
+		# No track backref; fall back to non-negative clamp
+		var final := max(0.0, proposed)
+		start_field.text = str(snapped(final, 0.01))
 
 func _on_duration_changed(txt:String) -> void:
 	if clip == null:
