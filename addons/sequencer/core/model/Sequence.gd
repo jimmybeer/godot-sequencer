@@ -4,7 +4,7 @@ class_name Sequence
 @export var name:String = "New Sequence"
 @export var fps:int = 30
 @export var duration:float = 10.0
-@export var tracks:Array[TrackData] = []
+@export var tracks:Array[TrackData] = [] # array order == visual order
 
 func to_dict() -> Dictionary:
 	var tracks_arr:Array = []
@@ -24,6 +24,7 @@ func from_dict(data:Dictionary) -> Sequence:
 	fps = data.get("fps", fps)
 	duration = data.get("duration", duration)
 	
+	tracks.clear()
 	if data.has("tracks"):
 		for tdict in data["tracks"]:
 			var track = TrackData.new().from_dict(tdict)

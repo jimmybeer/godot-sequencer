@@ -42,7 +42,8 @@ func _ensure_min_dock_height() -> void:
 # Core objects
 # ------------------------------
 @onready var command_bus := CommandBus.new()
-@onready var autosave := AutosaveService.new(null)
+@onready var autosave := AutosaveService.new()
+
 var clock:Node
 var viewport:TimelineViewport
 
@@ -58,9 +59,16 @@ func _ready() -> void:
 	
 	clock = load("res://addons/sequencer/core/utils/timeline_clock.gd").new()
 	add_child(clock)
-	#add_child(autosave)
-	#autosave.clock = clock
 	clock.connect("time_changed", Callable(self, "_on_time_changed"))
+
+	add_child(autosave)
+	autosave.sequence = sequence
+	autosave.enabled = save_check.button_pressed
+	autosave.autoloaded.connect(func(_p):
+		# After load: rebuild UI from model order
+		refresh_all_views_from_model()
+		_update_clip_bar()
+		)
 	
 	viewport = preload("res://addons/sequencer/editor/timeline_viewport.gd").new()
 	add_child(viewport)
@@ -78,6 +86,7 @@ func _ready() -> void:
 		refresh_all_views_from_model()
 		update_undo_redo_buttons()
 		_update_clip_bar()
+		autosave.mark_dirty()
 		)
 	update_undo_redo_buttons()
 	

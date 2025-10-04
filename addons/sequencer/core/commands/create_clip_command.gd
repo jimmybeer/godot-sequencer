@@ -6,7 +6,6 @@ var clip:ClipData
 var start:float
 var duration:float
 var name:String
-var index_when_added: int = -1
 
 func _init(_track:TrackData, _start:float, _duration:float, _name:String = "New Clip") -> void:
 	track = _track
@@ -24,8 +23,7 @@ func execute():
 		clip.track = track
 	
 	#Append to model
-	index_when_added = track.clips.size()
-	track.clips.append(clip)
+	track.add_clip(clip)
 	# Once the model is updated, Sequence Dock auto refreshes the Track View -> Clip View appears
 
 func undo() -> void:

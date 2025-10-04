@@ -8,6 +8,11 @@ class_name TrackData
 # (no overlap, not <0, not <min_dur, and no "sliding" when hitting limits)
 const MIN_DURATION := 0.1
 
+func add_clip(c:ClipData) -> void:
+	if not clips.has(c):
+		clips.append(c)
+		c.track = self
+		
 func to_dict() -> Dictionary:
 	var clips_arr:Array = []
 	
@@ -26,6 +31,7 @@ func from_dict(data:Dictionary) -> TrackData:
 	if data.has("clips"):
 		for cdict in data["clips"]:
 			var clip = ClipData.new().from_dict(cdict)
+			clip.track = self
 			clips.append(clip)
 	
 	return self
