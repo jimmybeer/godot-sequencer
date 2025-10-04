@@ -4,6 +4,10 @@ class_name TrackData
 @export var name:String = "New Track"
 @export var clips:Array[ClipData] = []
 
+# Ensure a proposed resize stays within legal bounds
+# (no overlap, not <0, not <min_dur, and no "sliding" when hitting limits)
+const MIN_DURATION := 0.1
+
 func to_dict() -> Dictionary:
 	var clips_arr:Array = []
 	
@@ -111,3 +115,52 @@ func find_legal_start(clip: ClipData, proposed_start: float) -> Dictionary:
 		best_dist = dist_tail
 
 	return {"start": best_start, "ok": false}
+	
+# Ensure a proposed resize stays within legal bounds (no overlap, not <0)
+func find_legal_resize(clip: ClipData, proposed_start: float, proposed_duration: float) -> Dictionary:
+	var others := _sorted_others(clip)
+	var start := proposed_start
+	var dur := proposed_duration
+
+	# 1️⃣ Clamp minimum duration
+	if dur < MIN_DURATION:
+		# Don't let it shrink below min; keep the stationary edge fixed.
+		if start > clip.start:
+			# Left handle dragged right — fix start back, clamp duration
+			start = clip.start + clip.duration - MIN_DURATION
+		else:
+			# Right handle dragged left — fix start, clamp duration
+			start = clip.start
+		dur = MIN_DURATION
+
+	# 2️⃣ Clamp against zero
+	if start < 0.0:
+		dur += start  # reduce duration by the amount it would go negative
+		start = 0.0
+		dur = max(MIN_DURATION, dur)
+
+	# 3️⃣ Clamp against left neighbour
+	for i in range(others.size()):
+		var c = others[i]
+		if c.start < clip.start:
+			var right_edge:float = c.start + c.duration
+			if start < right_edge:
+				# Move start to just after neighbour, shrink dur if needed
+				var overlap:float = right_edge - start
+				start = right_edge
+				dur = max(MIN_DURATION, dur - overlap)
+			break
+
+	# 4️⃣ Clamp against right neighbour
+	for i in range(others.size()):
+		var c = others[i]
+		if c.start > clip.start:
+			var right_limit:float = c.start
+			if start + dur > right_limit:
+				dur = max(MIN_DURATION, right_limit - start)
+			break
+
+	return {
+		"start": start,
+		"duration": dur,
+	}

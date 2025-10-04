@@ -5,6 +5,8 @@ class_name TrackView
 signal clip_clicked(clip_view: ClipView, shift: bool)
 signal clip_drag_preview(cv: ClipView, new_start: float)
 signal clip_drag_finished(cv: ClipView, old_start: float, new_start: float)
+signal clip_resize_preview(cv: ClipView, edge: String, new_start: float, new_duration: float)
+signal clip_resize_finished(cv: ClipView, edge: String,old_start: float, old_duration: float, new_start: float, new_duration: float)
 
 @onready var clips_layer:Control = %ClipsLayer
 
@@ -37,6 +39,8 @@ func refresh_from_model() -> void:
 			cv.clip_clicked.connect(_on_clip_clicked)
 			cv.clip_drag_preview.connect(_on_clip_drag_preview)
 			cv.clip_drag_finished.connect(_on_clip_drag_finished)
+			cv.clip_resize_preview.connect(_on_cv_resize_preview)
+			cv.clip_resize_finished.connect(_on_cv_resize_finished)
 			clip_view_by_model[clip] = cv
 		else:
 			clip_view_by_model[clip].update_geometry(px_per_second, scroll_x)
@@ -78,3 +82,9 @@ func _on_clip_drag_finished(cv: ClipView, old_start: float, new_start: float):
 	
 	if abs(clamped - old_start) > 0.001:
 		emit_signal("clip_drag_finished", cv, old_start, clamped)
+		
+func _on_cv_resize_preview(cv: ClipView, edge: String, new_start: float, new_duration: float) -> void:
+	emit_signal("clip_resize_preview", cv, edge, new_start, new_duration)
+
+func _on_cv_resize_finished(cv: ClipView, edge: String, old_start: float, old_duration: float, new_start: float, new_duration: float) -> void:
+	emit_signal("clip_resize_finished", cv, edge, old_start, old_duration, new_start, new_duration)

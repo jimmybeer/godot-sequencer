@@ -204,6 +204,8 @@ func _create_track_row_for(track:TrackData) -> void:
 	tv.clip_clicked.connect(_on_tv_clip_clicked) 
 	tv.clip_drag_preview.connect(_on_clip_drag_preview)
 	tv.clip_drag_finished.connect(_on_clip_drag_finished)
+	tv.clip_resize_preview.connect(_on_tv_clip_resize_preview)
+	tv.clip_resize_finished.connect(_on_tv_clip_resize_finished)
 	track_view_by_model[track] = tv
 	tv.update_view(viewport.px_per_second, viewport.scroll_x)
 	
@@ -284,6 +286,32 @@ func _on_clip_drag_finished(cv: ClipView, old_start: float, new_start: float) ->
 		return
 	var cmd = MoveClipCommand.new(cv.clip_data, old_start, new_start)
 	command_bus.push(cmd)
+	
+func _on_tv_clip_resize_preview(cv: ClipView, edge: String, new_start: float, new_dur: float) -> void:
+	var td := cv.clip_data.track
+	if td:
+		var res := td.find_legal_resize(cv.clip_data, new_start, new_dur)
+		var legal_start:float = res["start"]
+		var legal_dur:float = res["duration"]
+			
+		cv.update_geometry(viewport.px_per_second, viewport.scroll_x, legal_start, legal_dur)
+	
+		if last_selected_cv == cv and is_instance_valid(last_selected_cv):
+			# Update bar live with temporary value
+			clip_bar.duration_field.text = str(snapped(legal_dur, 0.01))
+			clip_bar.start_field.text = str(snapped(legal_start, 0.01))
+			
+func _on_tv_clip_resize_finished(cv: ClipView, edge: String, old_start: float, old_dur: float, new_start: float, new_dur: float) -> void:
+	var td := cv.clip_data.track
+	if not td: return
+	
+	var res := td.find_legal_resize(cv.clip_data, new_start, new_dur)
+	var final_start:float = res["start"]
+	var final_dur:float = res["duration"]
+	
+	if abs(final_dur - old_dur) > 0.0001 or abs(final_start - old_start) > 0.0001:
+		var ResizeCmd := preload("res://addons/sequencer/core/commands/resize_clip_command.gd")
+		command_bus.push(ResizeCmd.new(cv.clip_data, old_start, old_dur, final_start, final_dur))
 
 func _on_tv_clip_clicked(cv: ClipView, shift: bool) -> void:
 	select_clip(cv, shift)
