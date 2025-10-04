@@ -48,5 +48,11 @@ func _on_start_changed(txt:String) -> void:
 func _on_duration_changed(txt:String) -> void:
 	if clip == null:
 		return
-	var val = float(txt)
-	emit_signal("clip_updated", clip, "duration", val)
+	var proposed := float(txt)
+	if clip.track:
+		var res:Dictionary = clip.track.find_legal_resize(clip, clip.start, proposed)
+		var final_dur:float = res["duration"]
+		
+		if abs(final_dur - clip.duration) > 0.001:
+			clip_updated.emit(clip, "duration", final_dur)
+	duration_field.text = str(snapped(clip.duration, 0.01))

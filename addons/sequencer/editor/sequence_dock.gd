@@ -343,6 +343,6 @@ func _on_clip_updated(clip: ClipData, field: String, value: float):
 		var MoveCmd = preload("res://addons/sequencer/core/commands/move_clip_command.gd")
 		command_bus.push(MoveCmd.new(clip, clip.start, value))
 
-	#elif field == "duration":
-	#	var ResizeCmd = preload("res://addons/sequencer/core/commands/resize_clip_command.gd")
-	#	command_bus.push(ResizeCmd.new(clip, clip.duration, value)))
+	elif field == "duration":
+		var ResizeCmd = preload("res://addons/sequencer/core/commands/resize_clip_command.gd")
+		command_bus.push(ResizeCmd.new(clip, clip.start, clip.duration, clip.start, value))
