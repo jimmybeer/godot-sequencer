@@ -41,6 +41,7 @@ func refresh_from_model() -> void:
 			cv.clip_drag_finished.connect(_on_clip_drag_finished)
 			cv.clip_resize_preview.connect(_on_cv_resize_preview)
 			cv.clip_resize_finished.connect(_on_cv_resize_finished)
+			clip.clip_view = cv
 			clip_view_by_model[clip] = cv
 		else:
 			clip_view_by_model[clip].update_geometry(px_per_second, scroll_x)
@@ -49,7 +50,7 @@ func update_view(pxps: float, scroll: float):
 	px_per_second = pxps
 	scroll_x = scroll
 	for cv in clip_view_by_model.values():
-		cv.update_geometry(px_per_second, scroll)
+		cv.update_geometry(px_per_second, scroll)		
 
 func get_all_clips() -> Array:
 	return clip_view_by_model.values()

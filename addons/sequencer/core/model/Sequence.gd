@@ -31,3 +31,11 @@ func from_dict(data:Dictionary) -> Sequence:
 			tracks.append(track)
 	
 	return self
+	
+func get_active_clips(playhead_time: float) -> Array[ClipData]:
+	var actives: Array[ClipData] = []
+	for t in tracks:
+		var c := t.get_active_clip(playhead_time)
+		if c != null:
+			actives.append(c)
+	return actives

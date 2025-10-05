@@ -163,6 +163,9 @@ func _process(delta:float) -> void:
 
 func _on_time_changed(t:float) -> void:
 	time_label.text = str(snapped(t, 0.01)) + "s"
+	
+	for tv:TrackView in track_view_by_model.values():
+		tv.track_data.get_active_clip(t)
 
 func _on_viewport_changed(pxps:float, scroll:float) -> void:
 	for tv in track_view_by_model.values():
@@ -180,16 +183,18 @@ func load_mock_tracks():
 		track.name = "Track %d" % i
 
 		var c1 = clip_res.new()
-		c1.name = "Clip A"
+		c1.name = "Dialogue"
 		c1.start = 1.0+i
 		c1.duration = 3.0
 		c1.track = track
+		c1.color = Color(0.4, 0.7, 1.0, 0.9)
 
 		var c2 = clip_res.new()
-		c2.name = "Clip B"
+		c2.name = "Cut"
 		c2.start = 5.0+(i*3)
 		c2.duration = 2.0
 		c2.track = track
+		c2.color = Color(1.0, 0.4, 0.3, 0.9)
 
 		track.clips.append(c1)
 		track.clips.append(c2)

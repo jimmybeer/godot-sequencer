@@ -17,6 +17,16 @@ var selected:bool = false:
 	get:
 		return selected
 
+var hovered:bool = false
+
+var active:bool = false:
+	set(v):
+		if active == v: return
+		active = v
+		queue_redraw()
+	get:
+		return active
+
 var px_per_second: float = 100.0
 var scroll_x:float = 0.0
 
@@ -34,6 +44,15 @@ var resize_origin_duration := 0.0
 const MOVE_HANDLE_W:float = 8.0
 const RESIZE_HANDLE_W:float = 6.0
 
+const SELECTED:Color = Color(1, 1, 0.2) # brught yellow
+const HOVERED:Color = Color(0.8, 0.8, 0.8) # light grey
+const ACTIVE:Color = Color(1, 1, 0, 0.2)
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP # ensure we receive hover events 
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	
 func bind_to_model(clip: ClipData, _px: float, _scroll: float):
 	clip_data = clip
 	update_geometry(_px, _scroll)
@@ -60,13 +79,18 @@ func update_geometry(_px_per_second: float, _scroll_x: float, start_override: fl
 func _draw():
 	var rect = Rect2(Vector2.ZERO, size)
 	# Fill color depends on selection
-	var fill = Color(0.4, 0.7, 1.0, 0.9) if selected else Color(0.25, 0.6, 0.9, 0.9)
+	var fill := clip_data.color
+	
+	# Outline colour depends on state 
+	var outline := Color.BLACK
+	if selected:
+		outline = SELECTED
+	elif hovered:
+		outline = HOVERED
 
-	# Filled rectangle
+	# Draw base clip rectangle
 	draw_rect(rect, fill)
-
-	# Border
-	draw_rect(rect, Color.BLACK, false, 2)
+	draw_rect(rect, outline, false, 2)
 
 	# Clip label text
 	var font = get_theme_default_font()
@@ -101,6 +125,9 @@ func _draw():
 		# Move (centre) handle
 		var mx:float = size.x / 2 - mw / 2
 		draw_rect(Rect2(Vector2(mx, 0), Vector2(mw, h)), move_col)
+	
+	if active:
+		draw_rect(rect, ACTIVE)
 
 func _gui_input(event:InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -173,7 +200,6 @@ func _gui_input(event:InputEvent) -> void:
 
 			emit_signal("clip_resize_preview", self, "left" if resizing_left else "right", new_start, new_dur)
 			accept_event()
-			
 
 func _get_hit_handle(local_pos: Vector2) -> String:
 	# returns "left", "right", "move", or ""
@@ -188,3 +214,15 @@ func _get_hit_handle(local_pos: Vector2) -> String:
 	elif move_rect.has_point(local_pos):
 		return "move"
 	return ""
+	
+func _on_mouse_entered() -> void:
+	if dragging or resizing_left or resizing_right:
+		return
+	if not hovered:
+		hovered = true
+		queue_redraw()
+
+func _on_mouse_exited() -> void:
+	if hovered:
+		hovered = false
+		queue_redraw()

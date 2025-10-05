@@ -36,6 +36,17 @@ func from_dict(data:Dictionary) -> TrackData:
 	
 	return self
 
+func get_active_clip(playhead_time:float) -> ClipData:
+	var res:ClipData = null
+	for c:ClipData in clips:
+		if playhead_time >= c.start and playhead_time < (c.start + c.duration):
+			c.clip_view.active = true
+			res = c
+		else:
+			c.clip_view.active = false
+			
+	return res
+
 func get_non_overlap_range(clip: ClipData) -> Vector2:
 	# Returns (min_start, max_start) where the clip can legally move
 	var sorted = clips.duplicate()
