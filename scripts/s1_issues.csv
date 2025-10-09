@@ -1,0 +1,11 @@
+Title,Body,Labels
+"Add Track Create/Remove/Reorder commands","Implement CreateTrackCommand, DeleteTrackCommand, ReorderTrackCommand. Ensure undo/redo support.","S1-Core"
+"Clip Editing","Confirm move, resize, delete, and legality constraints are correct. Test overlap boundaries.","S1-Core"
+"Playhead Highlighting","Verify active clip highlighting matches playhead.","S1-Core"
+"Autosave Service","Ensure debounced autosave and manual Save/Load fully serialize sequence and track order.","S1-Core"
+"Track Mute/Solo/Lock","Add boolean fields to TrackData + header toggles; lock blocks clip edits.","S1-Core"
+"Snap to Grid","Implement basic snapping to 0.1 s intervals; future snap-to-neighbor support.","S1-Polish"
+"Keyboard Nudging","←/→ move; Alt+←/→ trim.","S1-Polish"
+"Color Picker in Properties Bar","Allow clip recoloring via ChangePropertyCommand.","S1-Polish"
+"Boundary Feedback","Brief red flash when resize or move hits illegal range.","S1-Polish"
+"Autosave Toast","Show small 'Saved ✓ 17:42' indicator on autosaved signal.","S1-Polish"
