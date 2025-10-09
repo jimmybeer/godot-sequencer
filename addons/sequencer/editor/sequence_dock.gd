@@ -54,7 +54,10 @@ var label_by_model:Dictionary = {}
 
 var last_selected_cv:ClipView = null
 
-var control_panel:SequenceControls = null
+var hub:SequencerHub
+
+func set_hub(h:SequencerHub) -> void:
+	hub = h
 
 func _ready() -> void:
 	sequence = load("res://addons/sequencer/core/model/Sequence.gd").new()
@@ -263,16 +266,6 @@ func select_clip(cv: ClipView, additive: bool) -> void:
 	# If selected now, mark as last
 	if cv.selected:
 		last_selected_cv = cv
-	
-	if control_panel:
-		print("control_panel")
-		if(cv.clip_data == null):
-			print("cv.clip_data=null")
-		else:
-			print("cv.clip_data=" + str(cv.clip_data.name))
-		control_panel.update_clip_info(cv.clip_data)
-	else:
-		print("control_panel is null")
 
 	_update_clip_bar()
 	
@@ -356,6 +349,9 @@ func _update_clip_bar() -> void:
 		return
 	
 	clip_bar.show_for_clip(last_selected_cv.clip_data)
+	
+	if hub:
+		hub.publish("clip.update", last_selected_cv.clip_data)
 
 func _on_tracks_vbox_gui_input(event: InputEvent) -> void:
 	

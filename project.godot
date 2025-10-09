@@ -15,10 +15,6 @@ run/main_scene="uid://ddkc1nhvtgw5i"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/sequencer/plugin.cfg")
-
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
